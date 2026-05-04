@@ -75,6 +75,10 @@ def update_issue_status(issue_id: str, status: str, assigned_to: Optional[str] =
         update_data["assignedTo"] = assigned_to
         update_data["assignedToName"] = assigned_to_name
         update_data["assignedAt"] = datetime.now().isoformat()
+    elif status == "in_progress":
+        update_data["acceptedAt"] = datetime.now().isoformat()
+        if resolution_note: # We'll repurpose resolution_note param for acceptance note if status is in_progress
+            update_data["acceptanceNote"] = resolution_note
     elif status == "resolved":
         update_data["resolvedAt"] = datetime.now().isoformat()
         if resolution_note:
@@ -109,6 +113,16 @@ def get_issues_by_developer(developer_email: str) -> List[Issue]:
         "assignedTo": developer_email,
         "status": {"$nin": ["resolved", "done"]}
     }
+    for doc in col.find(query).sort("createdAt", -1):
+        issues.append(Issue(**doc))
+    return issues
+
+
+def get_issues_by_submitter(email: str) -> List[Issue]:
+    """Get all issues submitted by a specific user."""
+    col = _get_issues_collection()
+    issues = []
+    query = {"submittedBy": email}
     for doc in col.find(query).sort("createdAt", -1):
         issues.append(Issue(**doc))
     return issues

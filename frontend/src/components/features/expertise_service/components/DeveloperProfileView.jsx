@@ -31,8 +31,10 @@ const DeveloperProfileView = ({
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [assignedIssues, setAssignedIssues] = useState([]);
+  const [raisedIssues, setRaisedIssues] = useState([]);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [categories, setCategories] = useState([]);
+
 
   const sessionUser = getCurrentUser();
   const isSelf = sessionUser?.email && sessionUser.email === developerEmail;
@@ -56,11 +58,15 @@ const DeveloperProfileView = ({
   };
 
   useEffect(() => {
-    fetchProfile();
-    fetchAssignedIssues();
+    if (developerEmail && developerEmail !== 'undefined') {
+      fetchProfile();
+      fetchAssignedIssues();
+      fetchRaisedIssues();
+    }
   }, [developerEmail]);
 
   const fetchProfile = async () => {
+    if (!developerEmail || developerEmail === 'undefined') return;
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/expertise/developers/${developerEmail}/detail`);
@@ -99,6 +105,7 @@ const DeveloperProfileView = ({
   };
 
   const fetchAssignedIssues = async () => {
+    if (!developerEmail || developerEmail === 'undefined') return;
     try {
       const response = await axios.get(
         `${API_BASE_URL}/api/expertise/developers/${developerEmail}/issues`
@@ -109,11 +116,26 @@ const DeveloperProfileView = ({
     }
   };
 
+  const fetchRaisedIssues = async () => {
+    if (!developerEmail || developerEmail === 'undefined') return;
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/expertise/developers/${developerEmail}/raised-issues`
+      );
+      setRaisedIssues(response.data || []);
+    } catch (err) {
+      setRaisedIssues([]);
+    }
+  };
+
   const handleAcceptIssue = async (issueId) => {
+    const note = window.prompt("Enter a note for accepting this mission (optional):", "Ready to initiate phase.");
+    if (note === null) return; // User cancelled
+
     try {
       const token = getAuthToken();
       await axios.post(
-        `${API_BASE_URL}/api/expertise/issues/${issueId}/accept?developerEmail=${encodeURIComponent(developerEmail)}`,
+        `${API_BASE_URL}/api/expertise/issues/${issueId}/accept?developerEmail=${encodeURIComponent(developerEmail)}&acceptanceNote=${encodeURIComponent(note)}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -125,10 +147,13 @@ const DeveloperProfileView = ({
   };
 
   const handleResolveIssue = async (issueId) => {
+    const note = window.prompt("Mission Complete! Enter a final resolution note:", "Successfully resolved the reported intelligence gap.");
+    if (note === null) return;
+
     try {
       const token = getAuthToken();
       await axios.post(
-        `${API_BASE_URL}/api/expertise/issues/${issueId}/complete?developerEmail=${encodeURIComponent(developerEmail)}&resolutionNote=Resolved via dashboard`,
+        `${API_BASE_URL}/api/expertise/issues/${issueId}/complete?developerEmail=${encodeURIComponent(developerEmail)}&resolutionNote=${encodeURIComponent(note)}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -138,6 +163,8 @@ const DeveloperProfileView = ({
       console.error('Failed to resolve issue');
     }
   };
+  
+  if (!developerEmail || developerEmail === 'undefined') return null;
 
   const getPriorityStyles = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -311,7 +338,24 @@ const DeveloperProfileView = ({
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{issue.category}</span>
                         </div>
                         <h4 className="font-bold text-white text-base mb-2 uppercase tracking-tight group-hover:text-brand transition-colors">{issue.title}</h4>
-                        <p className="text-xs text-slate-400 font-medium line-clamp-1 italic">"{issue.description}"</p>
+                        <p className="text-xs text-slate-400 font-medium line-clamp-1 italic mb-4">"{issue.description}"</p>
+                        
+                        {(issue.acceptanceNote || issue.resolutionNote) && (
+                          <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                            {issue.acceptanceNote && (
+                              <div className="flex items-start gap-2">
+                                <Zap size={12} className="text-brand mt-1 shrink-0" />
+                                <p className="text-[10px] text-slate-300 italic"><span className="font-bold uppercase text-brand/80">Acceptance:</span> {issue.acceptanceNote}</p>
+                              </div>
+                            )}
+                            {issue.resolutionNote && (
+                              <div className="flex items-start gap-2">
+                                <CheckCircle size={12} className="text-success mt-1 shrink-0" />
+                                <p className="text-[10px] text-slate-300 italic"><span className="font-bold uppercase text-success/80">Resolution:</span> {issue.resolutionNote}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4">
@@ -339,6 +383,60 @@ const DeveloperProfileView = ({
                                 Complete Unit
                               </button>
                             )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mission Submissions (Raised Issues) */}
+            {raisedIssues.length > 0 && (
+              <div className="bg-white rounded-4xl p-10 shadow-soft border border-slate-100">
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="w-1 bg-brand h-6 rounded-full" />
+                  <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Mission Submissions</h3>
+                </div>
+
+                <div className="space-y-6">
+                  {raisedIssues.map((issue) => (
+                    <div key={issue.id} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-8 hover:bg-white transition-all group">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                          <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border ${getPriorityStyles(issue.priority)}`}>
+                            {issue.priority}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{issue.category}</span>
+                          <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-600 ml-auto md:ml-0`}>
+                            {issue.status?.replace('_', ' ') || 'Unknown'}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-base mb-2 uppercase tracking-tight group-hover:text-brand transition-colors">{issue.title}</h4>
+                        <p className="text-xs text-slate-500 font-medium mb-4 italic">"{issue.description}"</p>
+                        
+                        {(issue.acceptanceNote || issue.resolutionNote) && (
+                          <div className="mt-4 p-4 bg-white rounded-2xl border border-slate-100 space-y-2 shadow-sm">
+                            {issue.acceptanceNote && (
+                              <div className="flex items-start gap-2">
+                                <Zap size={12} className="text-brand mt-1 shrink-0" />
+                                <p className="text-[10px] text-slate-600 italic"><span className="font-bold uppercase text-brand/80">Expert Note:</span> {issue.acceptanceNote}</p>
+                              </div>
+                            )}
+                            {issue.resolutionNote && (
+                              <div className="flex items-start gap-2">
+                                <CheckCircle size={12} className="text-success mt-1 shrink-0" />
+                                <p className="text-[10px] text-slate-600 italic"><span className="font-bold uppercase text-success/80">Resolution:</span> {issue.resolutionNote}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {issue.assignedTo && (
+                          <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <User size={12} />
+                            <span>Assigned to: <span className="text-slate-600">{issue.assignedToName || issue.assignedTo}</span></span>
                           </div>
                         )}
                       </div>
@@ -418,10 +516,10 @@ const DeveloperProfileView = ({
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-xs font-black text-white">
-                      {Math.round(Math.min(100, (Object.values(dev.jiraIssuesSolved || {}).reduce((a, b) => a + b, 0) / 25) * 100))}%
+                      {Math.round(Math.min(100, ((Object.values(dev.jiraIssuesSolved || {}) || []).reduce((a, b) => a + b, 0) / 25) * 100))}%
                     </span>
                     <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                      {Object.values(dev.jiraIssuesSolved || {}).reduce((a, b) => a + b, 0)} / 25 UNITS
+                      {(Object.values(dev.jiraIssuesSolved || {}) || []).reduce((a, b) => a + b, 0)} / 25 UNITS
                     </span>
                   </div>
                 </div>
@@ -438,7 +536,7 @@ const DeveloperProfileView = ({
                         <div className="w-6 h-6 bg-indigo-500/20 text-indigo-400 rounded-lg flex items-center justify-center shrink-0 border border-indigo-500/20">
                             <ChevronRight size={14} />
                         </div>
-                        <span>Secure {Math.max(0, 25 - Object.values(dev.jiraIssuesSolved || {}).reduce((a, b) => a + b, 0))} more units to unlock terminal elevation.</span>
+                        <span>Secure {Math.max(0, 25 - (Object.values(dev.jiraIssuesSolved || {}) || []).reduce((a, b) => a + b, 0))} more units to unlock terminal elevation.</span>
                     </div>
                 </div>
               </div>
@@ -496,7 +594,7 @@ const DeveloperProfileView = ({
               <div className="mb-10">
                 <div className="flex items-baseline gap-2">
                   <p className="text-6xl font-black text-slate-900 tracking-tighter">
-                    {Object.values(dev.jiraIssuesSolved || {}).reduce((a, b) => a + b, 0)}
+                    {(Object.values(dev.jiraIssuesSolved || {}) || []).reduce((a, b) => a + b, 0)}
                   </p>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Units Resolved</span>
                 </div>
@@ -506,7 +604,7 @@ const DeveloperProfileView = ({
                 <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 group-hover:bg-white transition-colors">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Commits</p>
                   <p className="text-2xl font-black text-slate-900">
-                    {Object.values(dev.githubCommits || {}).reduce((a, b) => a + b, 0)}
+                    {(Object.values(dev.githubCommits || {}) || []).reduce((a, b) => a + b, 0)}
                   </p>
                 </div>
                 <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 group-hover:bg-white transition-colors">

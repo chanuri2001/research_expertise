@@ -628,13 +628,21 @@ const NotificationIssueViewModal = ({ issueId, onClose, onResolved }) => {
   };
 
   const handleAcceptMission = async () => {
+    const note = window.prompt("Enter a note for accepting this mission (optional):", "Ready to initiate phase.");
+    if (note === null) return; // User cancelled
+
     try {
       setIsAccepting(true);
       const token = getAuthToken();
       const User = getCurrentUser();
 
+      if (!User?.email) {
+        alert("Session expired. Please login again.");
+        return;
+      }
+
       await axios.post(
-        `${API_BASE_URL}/api/expertise/issues/${issueId}/accept?developerEmail=${encodeURIComponent(User.email)}`,
+        `${API_BASE_URL}/api/expertise/issues/${issueId}/accept?developerEmail=${encodeURIComponent(User.email)}&acceptanceNote=${encodeURIComponent(note)}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

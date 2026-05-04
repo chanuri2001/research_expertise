@@ -99,7 +99,7 @@ const IssueDetailModal = ({
                 <div className={`rounded-[2.5rem] p-10 border-2 shadow-premium relative overflow-hidden transition-all duration-700 ${
                   selectedIssue.status === 'resolved' ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'
                 }`}>
-                  <div className="flex items-center justify-between relative z-10">
+                  <div className="flex flex-col gap-8 relative z-10">
                     <div className="flex items-center gap-6">
                       <div className={`p-5 rounded-2xl ${selectedIssue.status === 'resolved' ? 'bg-success text-white' : 'bg-brand text-white shadow-lg shadow-brand/20'}`}>
                         <User size={32} />
@@ -113,6 +113,34 @@ const IssueDetailModal = ({
                         </p>
                       </div>
                     </div>
+
+                    {/* Operational Notes */}
+                    {(selectedIssue.acceptanceNote || selectedIssue.resolutionNote) && (
+                      <div className="space-y-6 pt-6 border-t border-slate-200/50">
+                        {selectedIssue.acceptanceNote && (
+                          <div className="bg-white/50 p-6 rounded-3xl border border-slate-100 shadow-sm group/note transition-all hover:bg-white">
+                            <div className="flex items-center gap-3 mb-3">
+                              <Clock size={14} className="text-brand" />
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Acceptance Note</h4>
+                            </div>
+                            <p className="text-sm font-semibold text-slate-700 italic leading-relaxed">
+                              "{selectedIssue.acceptanceNote}"
+                            </p>
+                          </div>
+                        )}
+                        {selectedIssue.resolutionNote && (
+                          <div className="bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100 shadow-sm group/note transition-all hover:bg-emerald-50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <CheckCircle size={14} className="text-success" />
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Final Resolution Note</h4>
+                            </div>
+                            <p className="text-sm font-bold text-slate-800 italic leading-relaxed">
+                              "{selectedIssue.resolutionNote}"
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

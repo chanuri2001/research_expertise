@@ -28,8 +28,10 @@ from .issue_repository import (
     mark_issue_as_done,
     mark_issue_as_resolved,
     get_issues_by_developer,
+    get_issues_by_submitter,
     delete_issue as delete_issue_repo,
     update_issue_data,
+    update_issue_status,
 )
 from .notification_repository import create_notification
 from .schemas import (
@@ -563,7 +565,7 @@ def assign_issue_from_dashboard(req: IssueAssignRequest) -> Issue:
     return issue
 
 
-def accept_issue(issue_id: str, developer_email: str) -> Issue:
+def accept_issue(issue_id: str, developer_email: str, acceptance_note: Optional[str] = None) -> Issue:
     """Accept an assigned issue, moving it to in_progress."""
     issue = get_issue_by_id(issue_id)
     if not issue:
@@ -572,8 +574,8 @@ def accept_issue(issue_id: str, developer_email: str) -> Issue:
     if issue.assignedTo != developer_email.lower():
         raise ValueError(f"Issue {issue_id} is not assigned to {developer_email}")
     
-    # Update main issue status
-    issue = update_issue_data(issue_id, {"status": "in_progress"})
+    # Update main issue status and note
+    issue = update_issue_status(issue_id, "in_progress", resolution_note=acceptance_note)
     
     # Update in developer profile
     update_pending_issue_status(developer_email, issue.category, issue_id, "in_progress")
@@ -582,11 +584,18 @@ def accept_issue(issue_id: str, developer_email: str) -> Issue:
     try:
         all_devs = list_developers()
         managers = [d for d in all_devs if getattr(d, "role", "developer") == "manager"]
-        for mgr in managers:
+        
+        # Also include the submitter if they are not already in the manager list
+        notification_recipients = {mgr.email for mgr in managers}
+        if issue.submittedBy:
+            notification_recipients.add(issue.submittedBy)
+
+        for email in notification_recipients:
             create_notification(
-                user_email=mgr.email,
+                user_email=email,
                 title="Issue Accepted",
-                message=f"Expert {developer_email} has accepted the issue: {issue.title}. Status is now In Progress.",
+                message=f"Expert {developer_email} has accepted the issue: {issue.title}. " + 
+                        (f"Note: {acceptance_note}" if acceptance_note else "Status is now In Progress."),
                 type="system",
                 related_issue_id=issue.id
             )
@@ -699,6 +708,11 @@ def mark_issue_complete(issue_id: str, developer_email: str, resolution_note: Op
 def get_developer_issues(developer_email: str) -> List[Issue]:
     """Get all issues assigned to a developer."""
     return get_issues_by_developer(developer_email.lower())
+
+
+def get_raised_issues(email: str) -> List[Issue]:
+    """Get all issues submitted by a user."""
+    return get_issues_by_submitter(email.lower())
 
 
 def get_system_config() -> Dict:

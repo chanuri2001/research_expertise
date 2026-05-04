@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Filter, AlertTriangle, LayoutDashboard, Clock, 
   UserCheck, CheckCircle, AlertCircle, Eye, Edit2, 
-  Trash2, ChevronLeft, ChevronRight, User
+  Trash2, ChevronLeft, ChevronRight, User, TrendingUp
 } from 'lucide-react';
 
 const getStatusStyles = (status) => {
@@ -154,7 +154,7 @@ const IssueTable = ({
                         {issue.status === 'in_progress' && <TrendingUp size={12} />}
                         {issue.status === 'resolved' && <CheckCircle size={12} />}
                         {issue.status === 'done' && <CheckCircle size={12} />}
-                        {issue.status.replace('_', ' ')}
+                        {issue.status?.replace('_', ' ') || 'Unknown'}
                       </div>
                     </td>
                     <td className="px-4 py-6">

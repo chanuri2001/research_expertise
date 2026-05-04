@@ -183,11 +183,12 @@ def complete_issue_endpoint(
 @app.post("/api/expertise/issues/{issue_id}/accept", response_model=Issue)
 def accept_issue_endpoint(
     issue_id: str,
-    developerEmail: str = Query(..., description="Email of developer accepting the issue")
+    developerEmail: str = Query(..., description="Email of developer accepting the issue"),
+    acceptanceNote: Optional[str] = Query(None, description="Optional note from developer when accepting")
 ) -> Issue:
     """Accept an assigned issue."""
     try:
-        return service.accept_issue(issue_id, developerEmail)
+        return service.accept_issue(issue_id, developerEmail, acceptanceNote)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -198,6 +199,12 @@ def accept_issue_endpoint(
 def get_developer_issues_endpoint(email: str) -> List[Issue]:
     """Get all issues assigned to a developer."""
     return service.get_developer_issues(email)
+
+
+@app.get("/api/expertise/developers/{email}/raised-issues", response_model=List[Issue])
+def get_raised_issues_endpoint(email: str) -> List[Issue]:
+    """Get all issues raised by a user."""
+    return service.get_raised_issues(email)
 
 
 @app.post("/api/expertise/developers", response_model=DeveloperProfile)

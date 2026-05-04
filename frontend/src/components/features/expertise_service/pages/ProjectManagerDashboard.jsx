@@ -219,11 +219,12 @@ const ProjectManagerDashboard = ({ refreshTrigger }) => {
   };
 
 
+  const safeIssues = Array.isArray(issues) ? issues : [];
   const stats = {
-    total: issues.length,
-    pending: issues.filter(i => i.status === 'pending').length,
-    assigned: issues.filter(i => i.status === 'assigned' || i.status === 'in_progress').length,
-    resolved: issues.filter(i => i.status === 'resolved' || i.status === 'done').length,
+    total: safeIssues.length,
+    pending: safeIssues.filter(i => i?.status === 'pending').length,
+    assigned: safeIssues.filter(i => i?.status === 'assigned' || i?.status === 'in_progress').length,
+    resolved: safeIssues.filter(i => i?.status === 'resolved' || i?.status === 'done').length,
   };
 
   return (

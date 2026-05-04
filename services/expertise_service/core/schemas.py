@@ -202,7 +202,9 @@ class Issue(BaseModel):
     assignedToStatus: Optional[str] = None # Current status (Active/Busy) of assigned expert
     createdAt: str
     assignedAt: Optional[str] = None
+    acceptedAt: Optional[str] = None
     resolvedAt: Optional[str] = None
+    acceptanceNote: Optional[str] = None
     resolutionNote: Optional[str] = None
     topExperts: Optional[List[Dict]] = None  # Top 3 recommended experts
 
