@@ -362,7 +362,7 @@ const DeveloperProfileView = ({
                     <Award size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight leading-none">Achievements</h3>
+                    <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight leading-none">Board</h3>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Achievement Terminal</p>
                   </div>
                 </div>
